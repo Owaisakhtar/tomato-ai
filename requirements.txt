@@ -1,8 +1,11 @@
 fastapi
 uvicorn
-tensorflow
 numpy
 pillow
 pyttsx3
 python-multipart
 SQLAlchemy
+jinja2
+mysql-connector-python
+passlib[bcrypt]
+pyjwt
