@@ -1,11 +1,8 @@
 fastapi
 uvicorn
-numpy
 pillow
-pyttsx3
+numpy
 python-multipart
-SQLAlchemy
-jinja2
 mysql-connector-python
-passlib[bcrypt]
-pyjwt
+huggingface_hub
+Jinja2
