@@ -1,45 +1,40 @@
-
 import os
-from fastapi.responses import HTMLResponse, RedirectResponse
-
 import datetime
 import numpy as np
-from fastapi import FastAPI, Request, UploadFile, File, Form, Depends
-
-
+from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 from tensorflow.keras.models import load_model
 from PIL import Image
 import pyttsx3
+from huggingface_hub import hf_hub_download
 
 # Local imports
 from database import get_db_connection
 from auth import hash_password, verify_password, create_jwt, get_current_user
 
+# -----------------------------
+# FASTAPI APP
+# -----------------------------
 app = FastAPI()
-from fastapi.staticfiles import StaticFiles
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
 
 # -----------------------------
 # AI MODEL (HuggingFace Download)
 # -----------------------------
-from huggingface_hub import hf_hub_download
-
 HF_TOKEN = os.environ.get("HF_TOKEN")
 MODEL_PATH = hf_hub_download(
     repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
     filename="best_model.h5",
-    token=HF_TOKEN  # add your token
+    token=HF_TOKEN
 )
-
-
 model = load_model(MODEL_PATH)
 print("Model loaded successfully!")
 
 # -----------------------------
-# CLASS LABELS (Full list)
+# CLASS LABELS
 # -----------------------------
 CLASS_NAMES = [
     "Tomato_Bacterial_spot",
@@ -55,7 +50,7 @@ CLASS_NAMES = [
 ]
 
 # -----------------------------
-# DISEASE ADVICE (full dictionary)
+# DISEASE ADVICE
 # -----------------------------
 ADVICE_MAP = {
     "Tomato_Bacterial_spot": "Bacterial spot detected. Remove affected leaves and spray with copper-based bactericide.",
@@ -74,12 +69,11 @@ def generate_advice(label):
     return ADVICE_MAP.get(label, "Unable to provide advice.")
 
 # -----------------------------
-# TEXT → AUDIO
+# TEXT TO AUDIO
 # -----------------------------
 def text_to_audio(text, filename):
     if not os.path.exists("uploads"):
         os.makedirs("uploads")
-
     audio_path = f"uploads/{filename}.mp3"
     engine = pyttsx3.init()
     engine.save_to_file(text, audio_path)
@@ -93,40 +87,31 @@ def text_to_audio(text, filename):
 def home(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
-# -----------------------------
-# AUTH ROUTES
-# -----------------------------
 @app.get("/signup", response_class=HTMLResponse)
 def signup(request: Request):
     return templates.TemplateResponse("signup.html", {"request": request})
 
+# -----------------------------
+# AUTH ROUTES
+# -----------------------------
 @app.post("/signup")
-def signup(username: str = Form(...), password: str = Form(...)):
+def signup_post(username: str = Form(...), password: str = Form(...)):
     conn = None
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
-
         hashed = hash_password(password)
-
         cursor.execute(
             "INSERT INTO users (username, password_hash) VALUES (%s, %s)",
             (username, hashed)
         )
         conn.commit()
-
         return {"success": True, "message": "Account created successfully!"}
-
     except Exception as e:
-        # Return the real error for debugging
         return {"success": False, "message": str(e)}
-
     finally:
         if conn:
             conn.close()
-
-
-
 
 @app.post("/login")
 def login(username: str = Form(...), password: str = Form(...)):
@@ -140,73 +125,48 @@ def login(username: str = Form(...), password: str = Form(...)):
         return {"error": "User not found"}
 
     user_id, stored_hash = user
-
     if verify_password(password, stored_hash):
         token = create_jwt({"user_id": user_id})
-
-        return {
-            "success": True,
-            "user_id": user_id,
-            "token": token
-        }
+        return {"success": True, "user_id": user_id, "token": token}
     else:
         return {"error": "Invalid password"}
 
-    
 @app.get("/dashboard/{user_id}", response_class=HTMLResponse)
 def dashboard(user_id: int, request: Request):
- return templates.TemplateResponse("dashboard.html", {"request": request, "user_id": user_id})
-
+    return templates.TemplateResponse("dashboard.html", {"request": request, "user_id": user_id})
 
 # -----------------------------
 # PREDICTION API
 # -----------------------------
 @app.post("/predict")
-async def predict(
-    file: UploadFile = File(...),
-    user_id: int = Form(...)
-):
-    # Save uploaded image
+async def predict(file: UploadFile = File(...), user_id: int = Form(...)):
     if not os.path.exists("uploads"):
         os.makedirs("uploads")
-
     file_path = f"uploads/{file.filename}"
     with open(file_path, "wb+") as f:
         f.write(await file.read())
 
-    # Preprocess
     img = Image.open(file_path).resize((256, 256))
     img = np.array(img) / 255.0
     img = img.reshape((1, 256, 256, 3))
 
-    # AI Prediction
     prediction = model.predict(img)
     class_id = np.argmax(prediction)
     label = CLASS_NAMES[class_id]
 
-    # Advice & audio
     advice = generate_advice(label)
     audio_path = text_to_audio(advice, file.filename.split(".")[0])
 
-    # Save history in MySQL
     conn = get_db_connection()
     cursor = conn.cursor()
-
     cursor.execute("""
         INSERT INTO history (user_id, filename, prediction, advice, audio_path, upload_date)
         VALUES (%s, %s, %s, %s, %s, %s)
     """, (user_id, file.filename, label, advice, audio_path, datetime.datetime.now()))
-
     conn.commit()
     conn.close()
 
-    return {
-        "filename": file.filename,
-        "prediction": label,
-        "advice": advice,
-        "audio_file": audio_path
-    }
-
+    return {"filename": file.filename, "prediction": label, "advice": advice, "audio_file": audio_path}
 
 # -----------------------------
 # USER HISTORY
@@ -219,24 +179,25 @@ def history(user_id: int, token: str):
 
     conn = get_db_connection()
     cursor = conn.cursor()
-
     cursor.execute(
         "SELECT filename, prediction, advice, audio_path, upload_date FROM history WHERE user_id=%s",
         (user_id,)
     )
-
     rows = cursor.fetchall()
     conn.close()
 
-    # Convert datetime to string for JSON
     history_list = []
     for row in rows:
         history_list.append([
-            row[0],                 # filename
-            row[1],                 # prediction
-            row[2],                 # advice
-            row[3],                 # audio_path
-            row[4].strftime("%Y-%m-%d %H:%M:%S")  # date as string
+            row[0], row[1], row[2], row[3], row[4].strftime("%Y-%m-%d %H:%M:%S")
         ])
 
     return {"history": history_list}
+
+# -----------------------------
+# RUN APP
+# -----------------------------
+if __name__ == "__main__":
+    import uvicorn
+    PORT = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=PORT, reload=True)
