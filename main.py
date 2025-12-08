@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from tensorflow.keras.models import load_model
 from PIL import Image
-import pyttsx3
+from gtts import gTTS
 from huggingface_hub import hf_hub_download
 
 # Local imports
@@ -75,9 +75,8 @@ def text_to_audio(text, filename):
     if not os.path.exists("uploads"):
         os.makedirs("uploads")
     audio_path = f"uploads/{filename}.mp3"
-    engine = pyttsx3.init()
-    engine.save_to_file(text, audio_path)
-    engine.runAndWait()
+    tts = gTTS(text=text, lang="en")
+    tts.save(audio_path)
     return audio_path
 
 # -----------------------------
@@ -193,8 +192,3 @@ def history(user_id: int, token: str):
         ])
 
     return {"history": history_list}
-
-# -----------------------------
-# RUN APP
-# -----------------------------
-
