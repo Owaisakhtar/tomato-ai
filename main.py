@@ -2,7 +2,7 @@ import os
 import datetime
 import numpy as np
 from fastapi import FastAPI, Request, UploadFile, File, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from tensorflow.keras.models import load_model
@@ -192,3 +192,11 @@ def history(user_id: int, token: str):
         ])
 
     return {"history": history_list}
+
+# -----------------------------
+# RUN APP ON RAILWAY
+# -----------------------------
+if __name__ == "__main__":
+    import uvicorn
+    PORT = int(os.environ.get("PORT", 8000))  # <- Railway sets this automatically
+    uvicorn.run("main:app", host="0.0.0.0", port=PORT)
