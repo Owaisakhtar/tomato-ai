@@ -27,10 +27,13 @@ templates = Jinja2Templates(directory="templates")
 # -----------------------------
 from huggingface_hub import hf_hub_download
 
+HF_TOKEN = os.environ.get("HF_TOKEN")
 MODEL_PATH = hf_hub_download(
     repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
-    filename="best_model.h5"
+    filename="best_model.h5",
+    token=HF_TOKEN  # add your token
 )
+
 
 model = load_model(MODEL_PATH)
 print("Model loaded successfully!")

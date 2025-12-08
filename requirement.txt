@@ -1,4 +1,0 @@
-jinja2
-mysql-connector-python
-passlib[bcrypt]
-pyjwt
