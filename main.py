@@ -5,7 +5,6 @@ from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-from tensorflow.keras.models import load_model
 from PIL import Image
 from gtts import gTTS
 from huggingface_hub import hf_hub_download
@@ -14,24 +13,29 @@ from huggingface_hub import hf_hub_download
 from database import get_db_connection
 from auth import hash_password, verify_password, create_jwt, get_current_user
 
-# -----------------------------
-# FASTAPI APP
-# -----------------------------
 app = FastAPI()
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
 
 # -----------------------------
-# AI MODEL (HuggingFace Download)
+# LAZY MODEL LOADING
 # -----------------------------
-HF_TOKEN = os.environ.get("HF_TOKEN")
-MODEL_PATH = hf_hub_download(
-    repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
-    filename="best_model.h5",
-    token=HF_TOKEN
-)
-model = load_model(MODEL_PATH)
-print("Model loaded successfully!")
+model = None
+
+def get_model():
+    """Load model only when needed."""
+    global model
+    if model is None:
+        HF_TOKEN = os.environ.get("HF_TOKEN")
+        model_path = hf_hub_download(
+            repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
+            filename="best_model.h5",
+            token=HF_TOKEN
+        )
+        from tensorflow.keras.models import load_model
+        model = load_model(model_path)
+        print("Model loaded successfully!")
+    return model
 
 # -----------------------------
 # CLASS LABELS
@@ -49,9 +53,6 @@ CLASS_NAMES = [
     "Tomato_healthy"
 ]
 
-# -----------------------------
-# DISEASE ADVICE
-# -----------------------------
 ADVICE_MAP = {
     "Tomato_Bacterial_spot": "Bacterial spot detected. Remove affected leaves and spray with copper-based bactericide.",
     "Tomato_Early_blight": "Early Blight detected. Remove infected leaves and apply copper-based fungicide.",
@@ -65,22 +66,15 @@ ADVICE_MAP = {
     "Tomato_healthy": "Your plant is healthy! No action is needed."
 }
 
-def generate_advice(label):
-    return ADVICE_MAP.get(label, "Unable to provide advice.")
-
-# -----------------------------
-# TEXT TO AUDIO
-# -----------------------------
 def text_to_audio(text, filename):
     if not os.path.exists("uploads"):
         os.makedirs("uploads")
     audio_path = f"uploads/{filename}.mp3"
-    tts = gTTS(text=text, lang="en")
-    tts.save(audio_path)
+    gTTS(text=text, lang="en").save(audio_path)
     return audio_path
 
 # -----------------------------
-# UI ROUTES
+# ROUTES
 # -----------------------------
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
@@ -90,9 +84,6 @@ def home(request: Request):
 def signup(request: Request):
     return templates.TemplateResponse("signup.html", {"request": request})
 
-# -----------------------------
-# AUTH ROUTES
-# -----------------------------
 @app.post("/signup")
 def signup_post(username: str = Form(...), password: str = Form(...)):
     conn = None
@@ -127,20 +118,25 @@ def login(username: str = Form(...), password: str = Form(...)):
     if verify_password(password, stored_hash):
         token = create_jwt({"user_id": user_id})
         return {"success": True, "user_id": user_id, "token": token}
-    else:
-        return {"error": "Invalid password"}
+
+    return {"error": "Invalid password"}
 
 @app.get("/dashboard/{user_id}", response_class=HTMLResponse)
 def dashboard(user_id: int, request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request, "user_id": user_id})
 
 # -----------------------------
-# PREDICTION API
+# PREDICT
 # -----------------------------
 @app.post("/predict")
 async def predict(file: UploadFile = File(...), user_id: int = Form(...)):
+
+    # Load model now (lazy)
+    model = get_model()
+
     if not os.path.exists("uploads"):
         os.makedirs("uploads")
+
     file_path = f"uploads/{file.filename}"
     with open(file_path, "wb+") as f:
         f.write(await file.read())
@@ -153,7 +149,7 @@ async def predict(file: UploadFile = File(...), user_id: int = Form(...)):
     class_id = np.argmax(prediction)
     label = CLASS_NAMES[class_id]
 
-    advice = generate_advice(label)
+    advice = ADVICE_MAP[label]
     audio_path = text_to_audio(advice, file.filename.split(".")[0])
 
     conn = get_db_connection()
@@ -167,9 +163,6 @@ async def predict(file: UploadFile = File(...), user_id: int = Form(...)):
 
     return {"filename": file.filename, "prediction": label, "advice": advice, "audio_file": audio_path}
 
-# -----------------------------
-# USER HISTORY
-# -----------------------------
 @app.get("/history/{user_id}")
 def history(user_id: int, token: str):
     auth_user = get_current_user(token)
@@ -194,9 +187,9 @@ def history(user_id: int, token: str):
     return {"history": history_list}
 
 # -----------------------------
-# RUN APP ON RAILWAY
+# RUN ON RAILWAY
 # -----------------------------
 if __name__ == "__main__":
     import uvicorn
-    PORT = int(os.environ.get("PORT", 8000))  # <- Railway sets this automatically
+    PORT = int(os.environ.get("PORT", 8000))
     uvicorn.run("main:app", host="0.0.0.0", port=PORT)
