@@ -13,6 +13,11 @@ from huggingface_hub import hf_hub_download
 from database import get_db_connection
 from auth import hash_password, verify_password, create_jwt, get_current_user
 
+# -----------------------------
+# INITIAL SETUP
+# -----------------------------
+os.makedirs("uploads", exist_ok=True)  # ensure uploads folder exists
+
 app = FastAPI()
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
@@ -38,7 +43,7 @@ def get_model():
     return model
 
 # -----------------------------
-# CLASS LABELS
+# CLASS LABELS & ADVICE
 # -----------------------------
 CLASS_NAMES = [
     "Tomato_Bacterial_spot",
@@ -67,8 +72,6 @@ ADVICE_MAP = {
 }
 
 def text_to_audio(text, filename):
-    if not os.path.exists("uploads"):
-        os.makedirs("uploads")
     audio_path = f"uploads/{filename}.mp3"
     gTTS(text=text, lang="en").save(audio_path)
     return audio_path
@@ -126,16 +129,11 @@ def dashboard(user_id: int, request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request, "user_id": user_id})
 
 # -----------------------------
-# PREDICT
+# PREDICTION
 # -----------------------------
 @app.post("/predict")
 async def predict(file: UploadFile = File(...), user_id: int = Form(...)):
-
-    # Load model now (lazy)
     model = get_model()
-
-    if not os.path.exists("uploads"):
-        os.makedirs("uploads")
 
     file_path = f"uploads/{file.filename}"
     with open(file_path, "wb+") as f:
@@ -192,4 +190,4 @@ def history(user_id: int, token: str):
 if __name__ == "__main__":
     import uvicorn
     PORT = int(os.environ.get("PORT", 8000))
-    uvicorn.run("main:app", host="0.0.0.0", port=PORT)
+    uvicorn.run(app, host="0.0.0.0", port=PORT)
