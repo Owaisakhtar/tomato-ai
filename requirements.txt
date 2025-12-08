@@ -8,4 +8,4 @@ huggingface_hub
 Jinja2
 passlib[bcrypt]
 pyjwt
-tensorflow==2.14.0
+tensorflow==2.20.0
