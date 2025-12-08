@@ -6,3 +6,5 @@ python-multipart
 mysql-connector-python
 huggingface_hub
 Jinja2
+passlib[bcrypt]
+pyjwt
