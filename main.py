@@ -41,6 +41,14 @@ def get_model():
         model = load_model(model_path)
         print("Model loaded successfully!")
     return model
+# -----------------------------
+# PRELOAD MODEL AT STARTUP
+# -----------------------------
+@app.on_event("startup")
+def startup_event():
+    print("Loading model at startup...")
+    get_model()
+    print("Model loaded, app is ready!")
 
 # -----------------------------
 # CLASS LABELS & ADVICE
