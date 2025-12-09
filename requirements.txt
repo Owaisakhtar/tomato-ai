@@ -11,3 +11,4 @@ tensorflow==2.20.0
 passlib[bcrypt]
 pyjwt
 gtts
+mangum
