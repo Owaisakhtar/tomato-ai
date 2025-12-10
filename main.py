@@ -31,19 +31,22 @@ from huggingface_hub import hf_hub_download
 from tensorflow.keras.models import load_model
 from huggingface_hub import hf_hub_download
 import os
+from huggingface_hub import hf_hub_download
+from tensorflow.keras.models import load_model
 
-HF_TOKEN = os.environ.get("HF_TOKEN")  # your env var
+# Get your Hugging Face token from environment variables
+HF_TOKEN = os.environ.get("HF_TOKEN")  # Make sure this is set in your deployment
 
+# Download the model from Hugging Face hub
 MODEL_PATH = hf_hub_download(
     repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
     filename="best_model.h5",
-    use_auth_token=HF_TOKEN  # ✅ must use use_auth_token
+    token=HF_TOKEN  # <-- changed from use_auth_token
 )
 
-
+# Load the model
 model = load_model(MODEL_PATH)
 print("Model loaded successfully!")
-
 
 # -----------------------------
 # CLASS LABELS (Full list)
