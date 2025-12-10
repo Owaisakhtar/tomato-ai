@@ -1,5 +1,7 @@
 
 import os
+HF_TOKEN = os.environ.get("HF_TOKEN")  # Load from environment variable
+
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 import datetime
@@ -34,9 +36,8 @@ HF_TOKEN = os.environ.get("HF_TOKEN", None)
 MODEL_PATH = hf_hub_download(
     repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
     filename="best_model.h5",
-    token=HF_TOKEN  # <-- use 'token', not 'HF_TOKEN'
+      use_auth_token=HF_TOKEN  # <- add this
 )
-
 model = load_model(MODEL_PATH)
 print("Model loaded successfully!")
 
@@ -243,3 +244,6 @@ def history(user_id: int, token: str):
         ])
 
     return {"history": history_list}
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
