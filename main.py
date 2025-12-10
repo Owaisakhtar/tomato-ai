@@ -29,16 +29,17 @@ templates = Jinja2Templates(directory="templates")
 # -----------------------------
 from huggingface_hub import hf_hub_download
 from tensorflow.keras.models import load_model
-import os
 from huggingface_hub import hf_hub_download
+import os
 
-HF_TOKEN = os.environ.get("HF_TOKEN")  # load your token from environment
+HF_TOKEN = os.environ.get("HF_TOKEN")  # your env var
 
 MODEL_PATH = hf_hub_download(
     repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
     filename="best_model.h5",
-    token=HF_TOKEN  # use 'token' now
+    use_auth_token=HF_TOKEN  # ✅ must use use_auth_token
 )
+
 
 model = load_model(MODEL_PATH)
 print("Model loaded successfully!")

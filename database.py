@@ -1,14 +1,12 @@
-# database.py
 import os
 import mysql.connector
 
 def get_db_connection():
-    host = os.environ.get("DB_HOST", "localhost")
-    user = os.environ.get("DB_USER", "root")
-    password = os.environ.get("DB_PASS", "")
-    database = os.environ.get("DB_NAME", "tomato_ai")
-    # optional: port
-    port = int(os.environ.get("DB_PORT", 3306))
+    host = os.environ.get("MYSQLHOST", "localhost")
+    user = os.environ.get("MYSQLUSER", "root")
+    password = os.environ.get("MYSQLPASSWORD", "")
+    database = os.environ.get("MYSQLDATABASE", "tomato_ai")
+    port = int(os.environ.get("MYSQLPORT", 3306))
 
     return mysql.connector.connect(
         host=host,
