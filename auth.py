@@ -1,11 +1,10 @@
+import os
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer
 import jwt
 from passlib.hash import bcrypt
 
-SECRET_KEY = "your_secret_key"
-security = HTTPBearer()
-
+SECRET_KEY = os.environ.get("SECRET_KEY", "dev_secret_change_me")
 # -------------------------
 # HASH PASSWORD
 # -------------------------
