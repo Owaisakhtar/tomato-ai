@@ -28,17 +28,16 @@ templates = Jinja2Templates(directory="templates")
 # AI MODEL (HuggingFace Download)
 # -----------------------------
 
-# Get your Hugging Face token from environment variables
-import os
 from huggingface_hub import hf_hub_download
 from tensorflow.keras.models import load_model
 
-HF_TOKEN = os.environ.get("HF_TOKEN")
+# Railway environment variable
+HF_TOKEN = os.getenv("HUGGINGFACE_HUB_TOKEN")
 
 MODEL_PATH = hf_hub_download(
-    repo_id="your/repo",
-    filename="model.onnx",
-    token=os.getenv("HUGGINGFACE_HUB_TOKEN")
+    repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
+    filename="best_model.h5",
+    token=HF_TOKEN
 )
 
 model = load_model(MODEL_PATH)
