@@ -1,6 +1,5 @@
 
 import os
-HF_TOKEN = os.environ.get("HF_TOKEN")  # Load from environment variable
 
 from fastapi.responses import HTMLResponse, RedirectResponse
 
