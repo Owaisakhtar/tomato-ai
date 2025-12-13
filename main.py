@@ -45,7 +45,7 @@ def load_ai_model():
         token=HF_TOKEN
     )
 
-    model = load_model(model_path)
+     model = load_model(model_path, compile=False)
     print("✅ Model loaded successfully!")
 
 # -----------------------------
