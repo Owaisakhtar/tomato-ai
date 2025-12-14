@@ -18,15 +18,14 @@ import pyttsx3
 from database import get_db_connection
 from auth import hash_password, verify_password, create_jwt, get_current_user
 
-# Keras legacy loader for older .h5 models
-from keras.saving.legacy.serialization import load_model_from_hdf5
+# ✅ Replace legacy loader with standard TF Keras loader
+from tensorflow.keras.models import load_model  
 
 # -----------------------------
 # 2️⃣ FastAPI app setup
 # -----------------------------
 app = FastAPI()
 
-# Mount static files and templates
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
 
@@ -37,17 +36,14 @@ templates = Jinja2Templates(directory="templates")
 def startup_event():
     global model
 
-    # Ensure uploads directory exists
     os.makedirs("uploads", exist_ok=True)
 
-    # Hugging Face token
     HF_TOKEN = os.getenv("HF_TOKEN")
     if not HF_TOKEN:
         raise RuntimeError("HF_TOKEN not set")
 
     print("⬇ Downloading model from Hugging Face...")
 
-    # Download model
     MODEL_PATH = hf_hub_download(
         repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
         filename="best_model.h5"
@@ -55,9 +51,10 @@ def startup_event():
 
     print("📏 File size:", os.path.getsize(MODEL_PATH))
 
-    # Load model using legacy loader to fix 'batch_shape' issue
-    model = load_model_from_hdf5(MODEL_PATH)
+    # ✅ Load model using standard TF Keras
+    model = load_model(MODEL_PATH, compile=False)
     print("✅ Model loaded successfully")
+
 
 
 
