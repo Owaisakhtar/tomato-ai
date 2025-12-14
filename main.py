@@ -17,16 +17,20 @@ from auth import hash_password, verify_password, create_jwt, get_current_user
 
 app = FastAPI()
 
-# Function to load AI model
-def load_model_from_file(model_path="best_model_fixed.h5"):
-    model = tf.keras.models.load_model(model_path, compile=False)
-    print("✅ Model loaded successfully")
-    return model
-
+# -----------------------------
+# Mount static files and templates
+# -----------------------------
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
 
+# -----------------------------
+# Global model variable
+# -----------------------------
 model = None
+
+# -----------------------------
+# Startup event: load AI model
+# -----------------------------
 @app.on_event("startup")
 def startup_event():
     global model
@@ -34,17 +38,17 @@ def startup_event():
     MODEL_PATH = "best_model_fixed.h5"
     HF_TOKEN = os.getenv("HUGGINGFACE_HUB_TOKEN")
 
-    # Download if missing
+    # Download model from Hugging Face if missing
     if not os.path.exists(MODEL_PATH):
         if not HF_TOKEN:
-            raise RuntimeError("HUGGINGFACE_HUB_TOKEN not set")
-        from huggingface_hub import hf_hub_download
-        print("Downloading model from HuggingFace...")
+            raise RuntimeError("HUGGINGFACE_HUB_TOKEN not set in environment variables!")
+        print("⏳ Downloading model from Hugging Face...")
         MODEL_PATH = hf_hub_download(
             repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
             filename="best_model.h5",
             token=HF_TOKEN
         )
+        print("✅ Model downloaded successfully")
 
     # Load model
     model = tf.keras.models.load_model(MODEL_PATH, compile=False)
