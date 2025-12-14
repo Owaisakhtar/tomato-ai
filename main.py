@@ -27,23 +27,27 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
 
 model = None
-
 @app.on_event("startup")
 def startup_event():
     global model
-    model = load_model_from_file("best_model_fixed.h5")
 
+    MODEL_PATH = "best_model_fixed.h5"
     HF_TOKEN = os.getenv("HUGGINGFACE_HUB_TOKEN")
-    if not HF_TOKEN:
-        raise RuntimeError("HUGGINGFACE_HUB_TOKEN not set")
 
-    model_path = hf_hub_download(
-        repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
-        filename="best_model.h5",
-        token=HF_TOKEN
-    )
+    # Download if missing
+    if not os.path.exists(MODEL_PATH):
+        if not HF_TOKEN:
+            raise RuntimeError("HUGGINGFACE_HUB_TOKEN not set")
+        from huggingface_hub import hf_hub_download
+        print("Downloading model from HuggingFace...")
+        MODEL_PATH = hf_hub_download(
+            repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
+            filename="best_model.h5",
+            token=HF_TOKEN
+        )
 
-    model = tf.keras.models.load_model(model_path, compile=False)
+    # Load model
+    model = tf.keras.models.load_model(MODEL_PATH, compile=False)
     print("✅ Model loaded successfully")
 
 
