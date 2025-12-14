@@ -26,31 +26,27 @@ templates = Jinja2Templates(directory="templates")
 # -----------------------------
 # Global model variable
 # -----------------------------
-model = None
-
-# -----------------------------
-# Startup event: load AI model
-# -----------------------------
 @app.on_event("startup")
 def startup_event():
     global model
 
-    MODEL_PATH = "best_model_fixed.h5"
-    HF_TOKEN = os.getenv("HUGGINGFACE_HUB_TOKEN")
+    os.makedirs("uploads", exist_ok=True)
 
-    # Download model from Hugging Face if missing
-    if not os.path.exists(MODEL_PATH):
-        if not HF_TOKEN:
-            raise RuntimeError("HUGGINGFACE_HUB_TOKEN not set in environment variables!")
-        print("⏳ Downloading model from Hugging Face...")
-        MODEL_PATH = hf_hub_download(
-            repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
-            filename="best_model.h5",
-            token=HF_TOKEN
-        )
-        print("✅ Model downloaded successfully")
+    HF_TOKEN = os.getenv("HF_TOKEN")
+    if not HF_TOKEN:
+        raise RuntimeError("HF_TOKEN not set")
 
-    # Load model
+    print("⬇ Downloading model from Hugging Face...")
+
+    MODEL_PATH = hf_hub_download(
+        repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
+        filename="best_model_fixed.h5",
+        token=HF_TOKEN
+    )
+
+    print("📦 Model downloaded at:", MODEL_PATH)
+    print("📏 File size:", os.path.getsize(MODEL_PATH))
+
     model = tf.keras.models.load_model(MODEL_PATH, compile=False)
     print("✅ Model loaded successfully")
 
@@ -159,6 +155,8 @@ def dashboard(user_id: int, request: Request):
 # -----------------------------
 @app.post("/predict")
 async def predict(file: UploadFile = File(...), user_id: int = Form(...)):
+     if model is None:
+        return {"error": "Model not loaded yet"}
     if not os.path.exists("uploads"):
         os.makedirs("uploads")
 
