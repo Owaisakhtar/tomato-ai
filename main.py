@@ -1,14 +1,12 @@
-import tensorflow as tf
 import os
 import datetime
 import numpy as np
+import tensorflow as tf
 
 from fastapi import FastAPI, Request, UploadFile, File, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
-
-from tensorflow.keras.models import load_model
 from huggingface_hub import hf_hub_download
 from PIL import Image
 import pyttsx3
@@ -17,28 +15,19 @@ import pyttsx3
 from database import get_db_connection
 from auth import hash_password, verify_password, create_jwt, get_current_user
 
-# -----------------------------
-# APP INIT
-# -----------------------------
 app = FastAPI()
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
 
-# -----------------------------
-# GLOBAL MODEL VARIABLE
-# -----------------------------
 model = None
 
-# -----------------------------
-# LOAD MODEL ON STARTUP (IMPORTANT)
-# -----------------------------
 @app.on_event("startup")
 def load_ai_model():
     global model
 
     HF_TOKEN = os.getenv("HUGGINGFACE_HUB_TOKEN")
     if not HF_TOKEN:
-        raise RuntimeError("HUGGINGFACE_HUB_TOKEN not set in Railway")
+        raise RuntimeError("HUGGINGFACE_HUB_TOKEN not set")
 
     model_path = hf_hub_download(
         repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
@@ -46,26 +35,8 @@ def load_ai_model():
         token=HF_TOKEN
     )
 
-    # =========================
-    # 🔥 FIX FOR KERAS ERROR
-    # =========================
-    # Load old H5 model using tf.keras
-    old_model = tf.keras.models.load_model(
-        model_path,
-        compile=False
-    )
-
-    # Save in new Keras format (runtime-safe)
-    new_model_path = "/tmp/best_model_new.keras"
-    old_model.save(new_model_path)
-
-    # Load the new model for inference
-    model = tf.keras.models.load_model(
-        new_model_path,
-        compile=False
-    )
-
-    print("✅ Model converted and loaded successfully!")
+    model = tf.keras.models.load_model(model_path, compile=False)
+    print("✅ Model loaded successfully")
 
 
 # -----------------------------
