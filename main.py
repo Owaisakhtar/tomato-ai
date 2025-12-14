@@ -2,6 +2,7 @@
 # 1️⃣ All imports at the top
 # -----------------------------
 import os
+import mysql.connector 
 import datetime
 import numpy as np
 import tensorflow as tf
