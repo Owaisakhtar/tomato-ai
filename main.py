@@ -1,3 +1,4 @@
+import tensorflow as tf
 import os
 import datetime
 import numpy as np
@@ -45,8 +46,27 @@ def load_ai_model():
         token=HF_TOKEN
     )
 
-    model = load_model(model_path, compile=False)
-    print("✅ Model loaded successfully!")
+    # =========================
+    # 🔥 FIX FOR KERAS ERROR
+    # =========================
+    # Load old H5 model using tf.keras
+    old_model = tf.keras.models.load_model(
+        model_path,
+        compile=False
+    )
+
+    # Save in new Keras format (runtime-safe)
+    new_model_path = "/tmp/best_model_new.keras"
+    old_model.save(new_model_path)
+
+    # Load the new model for inference
+    model = tf.keras.models.load_model(
+        new_model_path,
+        compile=False
+    )
+
+    print("✅ Model converted and loaded successfully!")
+
 
 # -----------------------------
 # CLASS LABELS
