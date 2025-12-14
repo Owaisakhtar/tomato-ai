@@ -155,13 +155,16 @@ def dashboard(user_id: int, request: Request):
 # -----------------------------
 @app.post("/predict")
 async def predict(file: UploadFile = File(...), user_id: int = Form(...)):
-     if model is None:
+    global model
+
+    if model is None:
         return {"error": "Model not loaded yet"}
+
     if not os.path.exists("uploads"):
         os.makedirs("uploads")
 
     file_path = f"uploads/{file.filename}"
-    with open(file_path, "wb+") as f:
+    with open(file_path, "wb") as f:
         f.write(await file.read())
 
     img = Image.open(file_path).resize((256, 256))
@@ -177,7 +180,8 @@ async def predict(file: UploadFile = File(...), user_id: int = Form(...)):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO history (user_id, filename, prediction, advice, audio_path, upload_date) VALUES (%s,%s,%s,%s,%s,%s)",
+        "INSERT INTO history (user_id, filename, prediction, advice, audio_path, upload_date) "
+        "VALUES (%s,%s,%s,%s,%s,%s)",
         (user_id, file.filename, label, advice, audio_path, datetime.datetime.now())
     )
     conn.commit()
@@ -189,6 +193,7 @@ async def predict(file: UploadFile = File(...), user_id: int = Form(...)):
         "advice": advice,
         "audio_file": audio_path
     }
+
 
 # -----------------------------
 # USER HISTORY
