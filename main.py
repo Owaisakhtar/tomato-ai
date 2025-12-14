@@ -6,6 +6,8 @@ import datetime
 import numpy as np
 import tensorflow as tf
 
+from fastapi.responses import JSONResponse
+from werkzeug.security import generate_password_hash
 from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -121,20 +123,32 @@ def signup(request: Request):
 # AUTH ROUTES
 # -----------------------------
 @app.post("/signup")
-def signup_user(username: str = Form(...), password: str = Form(...)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
+async def signup_user(username: str = Form(...), password: str = Form(...)):
+    hashed_password = generate_password_hash(password)  # securely hash password
 
-    hashed = hash_password(password)
-    cursor.execute(
-        "INSERT INTO users (username, password_hash) VALUES (%s, %s)",
-        (username, hashed)
-    )
-    conn.commit()
-    conn.close()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-    return {"success": True}
+        # Check if username already exists
+        cursor.execute("SELECT id FROM users WHERE username=%s", (username,))
+        if cursor.fetchone():
+            return JSONResponse({"success": False, "message": "Username already exists."})
 
+        # Insert new user
+        cursor.execute(
+            "INSERT INTO users (username, password_hash) VALUES (%s, %s)",
+            (username, hashed_password)
+        )
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return JSONResponse({"success": True, "message": "Account created successfully!"})
+
+    except mysql.connector.Error as e:
+        print("Database error:", e)
+        return JSONResponse({"success": False, "message": "Server error."})
 @app.post("/login")
 def login(username: str = Form(...), password: str = Form(...)):
     conn = get_db_connection()
