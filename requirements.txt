@@ -1,14 +1,14 @@
 fastapi
 uvicorn
 pillow
-numpy<2
+numpy==1.24.4
 python-multipart
 mysql-connector-python
 huggingface_hub
 Jinja2
 pyttsx3
 tensorflow==2.13.0
+keras==2.13.1
 passlib[bcrypt]
 pyjwt
 gtts
-
