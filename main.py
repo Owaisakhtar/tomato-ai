@@ -55,7 +55,6 @@ print("📏 File size:", os.path.getsize(MODEL_PATH))
 from keras.saving.legacy.serialization import load_model_from_hdf5
 model = load_model_from_hdf5(MODEL_PATH)
 print("✅ Model loaded successfully")
-)
 
 
 # -----------------------------
