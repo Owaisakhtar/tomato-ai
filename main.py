@@ -25,7 +25,6 @@ templates = Jinja2Templates(directory="templates")
 
 # -----------------------------
 # Global model variable
-# -----------------------------
 @app.on_event("startup")
 def startup_event():
     global model
@@ -43,11 +42,20 @@ def startup_event():
         filename="best_model.h5"
     )
 
-    print("📦 Model downloaded at:", MODEL_PATH)
     print("📏 File size:", os.path.getsize(MODEL_PATH))
 
-    model = tf.keras.models.load_model(MODEL_PATH, compile=False)
+    # Fix for "Unrecognized keyword arguments: ['batch_shape']"
+    from keras.saving.legacy.serialization import load_model_from_hdf5
+    model = load_model_from_hdf5(MODEL_PATH)
     print("✅ Model loaded successfully")
+
+print("📏 File size:", os.path.getsize(MODEL_PATH))
+
+# Fix for "Unrecognized keyword arguments: ['batch_shape']"
+from keras.saving.legacy.serialization import load_model_from_hdf5
+model = load_model_from_hdf5(MODEL_PATH)
+print("✅ Model loaded successfully")
+)
 
 
 # -----------------------------
