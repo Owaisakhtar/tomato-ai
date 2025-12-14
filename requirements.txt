@@ -7,7 +7,7 @@ mysql-connector-python
 huggingface_hub
 Jinja2
 pyttsx3
-tensorflow==2.10.1
+tensorflow==2.13.0
 passlib[bcrypt]
 pyjwt
 gtts
