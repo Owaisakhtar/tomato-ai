@@ -16,14 +16,22 @@ from database import get_db_connection
 from auth import hash_password, verify_password, create_jwt, get_current_user
 
 app = FastAPI()
+
+# Function to load AI model
+def load_model_from_file(model_path="best_model_fixed.h5"):
+    model = tf.keras.models.load_model(model_path, compile=False)
+    print("✅ Model loaded successfully")
+    return model
+
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 templates = Jinja2Templates(directory="templates")
 
 model = None
 
 @app.on_event("startup")
-def load_ai_model():
+def startup_event():
     global model
+    model = load_model_from_file("best_model_fixed.h5")
 
     HF_TOKEN = os.getenv("HUGGINGFACE_HUB_TOKEN")
     if not HF_TOKEN:
