@@ -38,11 +38,11 @@ def startup_event():
 
     print("⬇ Downloading model from Hugging Face...")
 
-    MODEL_PATH = hf_hub_download(
-        repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
-        filename="best_model_fixed.h5",
-        token=HF_TOKEN
-    )
+  MODEL_PATH = hf_hub_download(
+    repo_id="abdullahzunorain/tomato_leaf_disease_det_model_v1",
+    filename="best_model.h5"
+)
+
 
     print("📦 Model downloaded at:", MODEL_PATH)
     print("📏 File size:", os.path.getsize(MODEL_PATH))
