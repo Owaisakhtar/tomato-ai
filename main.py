@@ -8,7 +8,7 @@ import numpy as np
 import tensorflow as tf
 
 from fastapi.responses import JSONResponse
-from werkzeug.security import generate_password_hash
+from auth import hash_password
 from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates

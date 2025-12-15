@@ -43,6 +43,7 @@ def decode_jwt(token: str):
 def get_current_user(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return payload["user_id"]["user_id"]  # FIXED
+        return payload["user_id"]
+ # FIXED
     except:
         return None
