@@ -125,32 +125,32 @@ def signup(request: Request):
 # -----------------------------
 @app.post("/signup")
 async def signup_user(username: str = Form(...), password: str = Form(...)):
-    hashed_password = generate_password_hash(password)  # securely hash password
+    hashed_password = hash_password(password)
 
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
 
-        # Check if username already exists
         cursor.execute("SELECT id FROM users WHERE username=%s", (username,))
         if cursor.fetchone():
             return JSONResponse({"success": False, "message": "Username already exists."})
 
-        # Insert new user
         cursor.execute(
             "INSERT INTO users (username, password_hash) VALUES (%s, %s)",
             (username, hashed_password)
         )
+
         conn.commit()
         cursor.close()
         conn.close()
 
         return JSONResponse({"success": True, "message": "Account created successfully!"})
 
-    except mysql.connector.Error as e:
-        print("Database error:", e)
-        return JSONResponse({"success": False, "message": "Server error."})
-@app.post("/login")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 def login(username: str = Form(...), password: str = Form(...)):
     conn = get_db_connection()
     cursor = conn.cursor()
