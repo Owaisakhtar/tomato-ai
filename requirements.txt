@@ -9,6 +9,7 @@ Jinja2
 pyttsx3
 tensorflow>=2.18
 keras>=3.8
-passlib[bcrypt]
+passlib==1.7.4
+bcrypt==3.2.2
 pyjwt
 gtts
